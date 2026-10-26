@@ -1,0 +1,45 @@
+# This fork's CI: the same checks as upstream's ci.yml (which only runs on
+# umami-software/umami, on paid runners), on GitHub's hosted runners.
+name: Fork CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: fork-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/dummy"
+  SKIP_DB_CHECK: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+          run_install: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+      - run: pnpm install
+      - run: pnpm openapi:generate
+      - run: pnpm openapi:check --explicit
+      - run: pnpm check:api:client
+      - run: pnpm build:packages
+      - run: pnpm test
+      - run: pnpm test:packages
+      - run: pnpm build
