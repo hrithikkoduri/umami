@@ -111,9 +111,9 @@ function getWebsiteOrderBy(
   const { orderBy, sortDescending = false } = filters;
   const direction = sortDescending ? 'desc' : 'asc';
 
-  // Callers that sanitise their filters (the user website lists) always land on a
-  // whitelisted field; the rest keep the ordering they passed in criteria.
-  if (!WEBSITE_SORT_FIELDS.includes(orderBy as (typeof WEBSITE_SORT_FIELDS)[number])) {
+  // Absent means the caller supplied no (or no whitelisted) sort, in which case the
+  // ordering it put in `criteria` is kept.
+  if (!orderBy || !WEBSITE_SORT_FIELDS.includes(orderBy as (typeof WEBSITE_SORT_FIELDS)[number])) {
     return undefined;
   }
 
@@ -127,7 +127,11 @@ export async function getWebsites(
   userId?: string,
 ): Promise<PageResult<WebsiteListItem[]>> {
   const { getSearchParameters, pagedQuery } = prisma;
-  const { search } = filters;
+
+  // Sanitise here, once, for every caller. pagedQuery builds its own orderBy from these
+  // filters, so an unsanitised orderBy reaches Prisma and throws on any non-column name.
+  const sortFilters = sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS);
+  const { search } = sortFilters;
 
   const where: Prisma.WebsiteWhereInput = {
     ...criteria.where,
@@ -140,11 +144,11 @@ export async function getWebsites(
     deletedAt: null,
   };
 
-  const orderBy = getWebsiteOrderBy(filters);
+  const orderBy = getWebsiteOrderBy(sortFilters);
 
   const websites = userId
-    ? await getFavouritesFirstWebsites(criteria, where, filters, userId)
-    : await pagedQuery('website', { ...criteria, where, ...(orderBy && { orderBy }) }, filters);
+    ? await getFavouritesFirstWebsites(criteria, where, sortFilters, userId)
+    : await pagedQuery('website', { ...criteria, where, ...(orderBy && { orderBy }) }, sortFilters);
 
   return attachFavouriteToWebsites(await attachShareIdToWebsites(websites), userId);
 }
