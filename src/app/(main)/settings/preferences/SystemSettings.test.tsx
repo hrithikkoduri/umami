@@ -1,9 +1,9 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import { SystemSettings } from './SystemSettings';
 
 vi.hoisted(() => {
-  process.env.currentVersion = '9.9.9';
+  vi.stubEnv('currentVersion', '9.9.9');
 });
 
 describe('SystemSettings', () => {
@@ -18,4 +18,8 @@ describe('SystemSettings', () => {
     expect(link).toHaveAttribute('href', '/api/heartbeat');
     expect(link).toHaveAttribute('target', '_blank');
   });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
