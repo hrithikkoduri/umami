@@ -7,7 +7,7 @@ import {
   useUserWebsitesQuery,
   useWebsiteQuery,
 } from '@/components/hooks';
-import { Globe } from '@/components/icons';
+import { Globe, Star } from '@/components/icons';
 
 export function WebsiteSelect({
   websiteId,
@@ -33,7 +33,7 @@ export function WebsiteSelect({
     { userId: user?.id, teamId },
     { search, pageSize: 100, includeTeams },
   );
-  const listItems: { id: string; name: string }[] = data?.data || [];
+  const listItems: { id: string; name: string; favourite?: boolean }[] = data?.data || [];
 
   useEffect(() => {
     setName(website?.name);
@@ -106,9 +106,20 @@ export function WebsiteSelect({
         },
       }}
     >
-      {listItems.map(({ id, name }) => (
-        <ListItem key={id} id={id}>
-          {name}
+      {listItems.map(({ id, name, favourite }) => (
+        <ListItem
+          key={id}
+          id={id}
+          aria-label={favourite ? `${name} (${t(labels.favourite)})` : name}
+        >
+          <Row alignItems="center" gap="2" width="100%">
+            <Text truncate>{name}</Text>
+            {favourite && (
+              <Icon size="sm" aria-hidden="true" style={{ marginInlineStart: 'auto' }}>
+                <Star fill="currentColor" />
+              </Icon>
+            )}
+          </Row>
         </ListItem>
       ))}
     </Select>
