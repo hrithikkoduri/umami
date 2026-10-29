@@ -1,4 +1,4 @@
-import { Button, Icon } from '@umami/react-zen';
+import { Button, Icon, useToast } from '@umami/react-zen';
 import { useState } from 'react';
 import { useApi, useMessages, useModified } from '@/components/hooks';
 import { Star } from '@/components/icons';
@@ -11,7 +11,8 @@ export function WebsiteFavouriteButton({
   isFavourite: boolean;
 }) {
   const { post, del } = useApi();
-  const { t, labels } = useMessages();
+  const { toast } = useToast();
+  const { t, labels, messages, getErrorMessage } = useMessages();
   const { touch } = useModified();
   // Local optimism, like ReplayPlayback: the star flips before the request resolves. The refetched
   // list remounts a row that moves, so a stale value cannot outlive the reorder.
@@ -26,12 +27,12 @@ export function WebsiteFavouriteButton({
       await (favourite
         ? del(`/websites/${websiteId}/favourite`)
         : post(`/websites/${websiteId}/favourite`));
-    } catch {
-      // Keep the star honest when the row does not move away and remount.
+      // Ordering is server-owned, so the row only moves once the list refetches.
+      touch('websites');
+    } catch (error) {
       setOverride(null);
+      toast(getErrorMessage(error as Error) || t(messages.error));
     }
-
-    touch('websites');
   };
 
   return (
