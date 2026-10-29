@@ -325,6 +325,14 @@ export const operations = {
     ],
     hasBody: false,
   },
+  favouriteWebsite: {
+    operationId: 'favouriteWebsite',
+    method: 'post',
+    path: '/api/websites/{websiteId}/favourite',
+    pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: false,
+  },
   getBoard: {
     operationId: 'getBoard',
     method: 'get',
@@ -2987,6 +2995,14 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  unfavouriteWebsite: {
+    operationId: 'unfavouriteWebsite',
+    method: 'delete',
+    path: '/api/websites/{websiteId}/favourite',
+    pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: false,
+  },
   updateBoard: {
     operationId: 'updateBoard',
     method: 'post',
@@ -3587,6 +3603,17 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'exportWebsite'>> {
     return this.execute('exportWebsite', input, options);
+  }
+
+  /**
+   * Favourite a website
+   * `POST /api/websites/{websiteId}/favourite`
+   */
+  favouriteWebsite(
+    input: OperationInput<'favouriteWebsite'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'favouriteWebsite'>> {
+    return this.execute('favouriteWebsite', input, options);
   }
 
   /**
@@ -4932,6 +4959,17 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'transferWebsite'>> {
     return this.execute('transferWebsite', input, options);
+  }
+
+  /**
+   * Unfavourite a website
+   * `DELETE /api/websites/{websiteId}/favourite`
+   */
+  unfavouriteWebsite(
+    input: OperationInput<'unfavouriteWebsite'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'unfavouriteWebsite'>> {
+    return this.execute('unfavouriteWebsite', input, options);
   }
 
   /**
