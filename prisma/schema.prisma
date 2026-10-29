@@ -26,6 +26,7 @@ model User {
   links                Link[]                @relation("user")
   pixels               Pixel[]               @relation("user")
   teams                TeamUser[]
+  favourites           WebsiteFavourite[]
   reports              Report[]
   boards               Board[]               @relation("user")
   twoFactorAuth        TwoFactorAuth?
@@ -122,6 +123,7 @@ model Website {
   sessionReplays      SessionReplay[]
   sessionReplaysSaved SessionReplaySaved[]
   heatmapEvents       HeatmapEvent[]
+  favourites          WebsiteFavourite[]
 
   @@index([userId])
   @@index([teamId])
@@ -263,6 +265,20 @@ model TeamUser {
   @@index([teamId])
   @@index([userId])
   @@map("team_user")
+}
+
+model WebsiteFavourite {
+  id        String    @id() @map("website_favourite_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  websiteId String    @map("website_id") @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id])
+  website Website @relation(fields: [websiteId], references: [id])
+
+  @@unique([userId, websiteId])
+  @@index([websiteId])
+  @@map("website_favourite")
 }
 
 model Report {
