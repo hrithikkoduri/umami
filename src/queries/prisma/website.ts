@@ -1,15 +1,17 @@
 import { z } from 'zod';
 import type { Prisma, Website } from '@/generated/prisma/client';
-import { ROLES } from '@/lib/constants';
+import { DEFAULT_PAGE_SIZE, ROLES } from '@/lib/constants';
 import prisma, { getSchema } from '@/lib/prisma';
 import redis from '@/lib/redis';
 import { sanitizeSortFilters } from '@/lib/sort';
 import type { PageResult, QueryFilters } from '@/lib/types';
+import { getWebsiteFavouriteIds } from './websiteFavourite';
 
 const WEBSITE_SORT_FIELDS = ['name', 'domain', 'createdAt'] as const;
 
 export type WebsiteListItem = Website & {
   shareId: string | null;
+  favourite: boolean;
   user?: { id: string; username: string } | null;
   createUser?: { id: string; username: string } | null;
   team?: {
@@ -101,13 +103,31 @@ export async function getWebsite(websiteId: string) {
   return attachShareIdToWebsite(website);
 }
 
+const DEFAULT_WEBSITE_SORT_FIELD = 'name';
+
+function getWebsiteOrderBy(
+  filters: QueryFilters,
+): Prisma.WebsiteOrderByWithRelationInput[] | undefined {
+  const { orderBy, sortDescending = false } = filters;
+  const direction = sortDescending ? 'desc' : 'asc';
+
+  // Callers that sanitise their filters (the user website lists) always land on a
+  // whitelisted field; the rest keep the ordering they passed in criteria.
+  if (!WEBSITE_SORT_FIELDS.includes(orderBy as (typeof WEBSITE_SORT_FIELDS)[number])) {
+    return undefined;
+  }
+
+  // The id key only breaks ties, so pages never shuffle between requests.
+  return [{ [orderBy]: direction }, { id: direction }];
+}
+
 export async function getWebsites(
   criteria: Prisma.WebsiteFindManyArgs,
   filters: QueryFilters,
+  userId?: string,
 ): Promise<PageResult<WebsiteListItem[]>> {
-  const sortFilters = sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS);
-  const { search } = sortFilters;
   const { getSearchParameters, pagedQuery } = prisma;
+  const { search } = filters;
 
   const where: Prisma.WebsiteWhereInput = {
     ...criteria.where,
@@ -120,9 +140,80 @@ export async function getWebsites(
     deletedAt: null,
   };
 
-  const websites = await pagedQuery('website', { ...criteria, where }, sortFilters);
+  const orderBy = getWebsiteOrderBy(filters);
 
-  return attachShareIdToWebsites(websites);
+  const websites = userId
+    ? await getFavouritesFirstWebsites(criteria, where, filters, userId)
+    : await pagedQuery('website', { ...criteria, where, ...(orderBy && { orderBy }) }, filters);
+
+  return attachFavouriteToWebsites(await attachShareIdToWebsites(websites), userId);
+}
+
+// Favourites-first ordering is a left join Prisma's findMany cannot express, so the page
+// window is read from two ordered segments of the same `where`: the caller's favourites,
+// then everything else. Sorting only the current page would break paging.
+async function getFavouritesFirstWebsites(
+  criteria: Prisma.WebsiteFindManyArgs,
+  where: Prisma.WebsiteWhereInput,
+  filters: QueryFilters,
+  userId: string,
+): Promise<PageResult<WebsiteListItem[]>> {
+  const { page = 1, pageSize, orderBy, search } = filters;
+  const size = +pageSize || DEFAULT_PAGE_SIZE;
+  const offset = size > 0 ? size * (+page - 1) : 0;
+  const end = size > 0 ? offset + size : Infinity;
+  const orderByArgs = getWebsiteOrderBy(filters) ?? [
+    { [DEFAULT_WEBSITE_SORT_FIELD]: 'asc' },
+    { id: 'asc' },
+  ];
+  const { website } = prisma.client;
+
+  const favouriteWhere: Prisma.WebsiteWhereInput = {
+    AND: [where, { favourites: { some: { userId } } }],
+  };
+  const otherWhere: Prisma.WebsiteWhereInput = {
+    AND: [where, { favourites: { none: { userId } } }],
+  };
+
+  const favouriteCount = await website.count({ where: favouriteWhere });
+  const favouriteStart = Math.min(offset, favouriteCount);
+  const favouriteEnd = Math.min(end, favouriteCount);
+  const otherStart = Math.max(0, offset - favouriteCount);
+  const otherEnd = end - favouriteCount;
+
+  const otherTake = Number.isFinite(otherEnd) ? Math.max(0, otherEnd - otherStart) : undefined;
+
+  const [favourites, others] = await Promise.all([
+    favouriteEnd > favouriteStart
+      ? website.findMany({
+          ...criteria,
+          where: favouriteWhere,
+          orderBy: orderByArgs,
+          skip: favouriteStart,
+          take: favouriteEnd - favouriteStart,
+        })
+      : [],
+    otherTake !== 0
+      ? website.findMany({
+          ...criteria,
+          where: otherWhere,
+          orderBy: orderByArgs,
+          skip: otherStart,
+          ...(otherTake && { take: otherTake }),
+        })
+      : [],
+  ]);
+
+  const count = await website.count({ where });
+
+  return {
+    data: [...favourites, ...others] as WebsiteListItem[],
+    count,
+    page: +page,
+    pageSize: size,
+    orderBy,
+    search,
+  };
 }
 
 export async function getAllUserWebsitesIncludingTeamAccess(
@@ -149,6 +240,7 @@ export async function getAllUserWebsitesIncludingTeamAccess(
       },
     },
     sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS, { orderBy: 'name' }),
+    userId,
   );
 }
 
@@ -168,6 +260,7 @@ export async function getUserWebsites(userId: string, filters?: QueryFilters) {
       },
     },
     sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS, { orderBy: 'name' }),
+    userId,
   );
 }
 
@@ -325,9 +418,25 @@ export async function attachShareIdToWebsite(website: Website) {
   };
 }
 
-export async function attachShareIdToWebsites(
-  websites: PageResult<(Website & Partial<WebsiteListItem>)[]>,
-): Promise<PageResult<WebsiteListItem[]>> {
+async function attachFavouriteToWebsites<
+  T extends PageResult<(Website & Partial<WebsiteListItem>)[]>,
+>(websites: T, userId?: string): Promise<T> {
+  const websiteIds = websites.data.map(website => website.id);
+  const favouriteIds = userId ? await getWebsiteFavouriteIds(userId, websiteIds) : [];
+  const favourites = new Set(favouriteIds);
+
+  return {
+    ...websites,
+    data: websites.data.map(website => ({
+      ...website,
+      favourite: favourites.has(website.id),
+    })),
+  };
+}
+
+export async function attachShareIdToWebsites<
+  T extends PageResult<(Website & Partial<WebsiteListItem>)[]>,
+>(websites: T): Promise<T> {
   const websiteIds = websites.data.map(website => website.id);
 
   if (websiteIds.length === 0) {
