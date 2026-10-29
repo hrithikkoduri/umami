@@ -64,27 +64,27 @@ describe('WebsiteSelect favourites', () => {
     expect(onChange).toHaveBeenCalledWith('w-2');
   });
 
-  test('renders the server order as-is instead of re-sorting the page', () => {
-    // An unfavourited row first on purpose: re-sorting here would reshuffle only the
-    // current page, so the switcher must not touch the order it is given.
+  test('renders the options in the order the server returned them', async () => {
+    // Unfavourited row first on purpose: re-sorting here would reshuffle only the current
+    // page, so the rendered order must match the server order exactly.
     setRows([
       { id: 'w-2', name: 'Bravo', favourite: false },
       { id: 'w-1', name: 'Alpha', favourite: true },
     ]);
+    const user = userEvent.setup();
 
     render(<WebsiteSelect websiteId="w-1" onChange={() => {}} />, {
       route: 'https://app.umami.is/websites',
     });
 
+    await user.click(screen.getByRole('combobox'));
+
+    const options = await screen.findAllByRole('option');
+
+    expect(options.map(option => option.textContent)).toEqual(['Bravo', 'Alpha']);
     expect(useUserWebsitesQueryMock).toHaveBeenCalledWith(
       { userId: 'user-1', teamId: undefined },
       { search: '', pageSize: 100, includeTeams: undefined },
     );
-    // Every render asks for the same page; nothing is sliced or re-ordered locally.
-    expect(
-      useUserWebsitesQueryMock.mock.calls.every(
-        ([, params]) => params.pageSize === 100 && params.search === '',
-      ),
-    ).toBe(true);
   });
 });

@@ -7,7 +7,8 @@ export function UserWebsites({ userId }) {
 
   return (
     <DataGrid query={queryResult}>
-      {({ data }) => <WebsitesTable data={data} showActions />}
+      {/* These are another user's rows; the star would write the caller's own favourite. */}
+      {({ data }) => <WebsitesTable data={data} showActions showFavourite={false} />}
     </DataGrid>
   );
 }
