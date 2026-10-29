@@ -6,13 +6,6 @@ vi.hoisted(() => {
   process.env.currentVersion = '9.9.9';
 });
 
-vi.mock('@/components/hooks', () => ({
-  useMessages: () => ({
-    t: (value: string) => value,
-    labels: { version: 'Version', healthCheck: 'Health check' },
-  }),
-}));
-
 describe('SystemSettings', () => {
   test('renders the app version and a link to the health endpoint', () => {
     render(<SystemSettings />);
