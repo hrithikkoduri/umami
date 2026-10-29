@@ -20,12 +20,20 @@ export async function getWebsiteFavouriteIds(userId: string, websiteIds: string[
 }
 
 export async function createWebsiteFavourite(userId: string, websiteId: string) {
-  return prisma.client.websiteFavourite.create({
-    data: {
+  // Upsert on the compound unique so starring twice stays a single row.
+  return prisma.client.websiteFavourite.upsert({
+    where: {
+      userId_websiteId: {
+        userId,
+        websiteId,
+      },
+    },
+    create: {
       id: uuid(),
       userId,
       websiteId,
     },
+    update: {},
   });
 }
 
