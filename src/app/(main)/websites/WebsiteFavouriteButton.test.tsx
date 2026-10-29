@@ -61,3 +61,50 @@ test('reverts the star and leaves the list alone when the request fails', async 
   );
   expect(touch).not.toHaveBeenCalled();
 });
+
+// react-zen renders table rows positionally (no React key), so a reordered list reuses each row's
+// component instance for whichever website lands in that slot. Reproduce that here: no keys, rows
+// reordered between renders.
+function PositionalRows({ rows }: { rows: { id: string; isFavourite: boolean }[] }) {
+  return (
+    <div>
+      {rows.map(row => (
+        <WebsiteFavouriteButton key={undefined} websiteId={row.id} isFavourite={row.isFavourite} />
+      ))}
+    </div>
+  );
+}
+
+test('a pending star does not leak onto the row that takes its slot after a reorder', async () => {
+  post.mockResolvedValue({ ok: true });
+  const { user, rerender } = render(
+    <PositionalRows
+      rows={[
+        { id: 'w-a', isFavourite: false },
+        { id: 'w-star', isFavourite: false },
+      ]}
+    />,
+  );
+
+  await user.click(screen.getAllByRole('button', { name: 'Favourite' })[1]);
+
+  // The favourited row moves to the top; w-a takes its old slot.
+  rerender(
+    <PositionalRows
+      rows={[
+        { id: 'w-star', isFavourite: true },
+        { id: 'w-a', isFavourite: false },
+      ]}
+    />,
+  );
+
+  const [first, second] = screen.getAllByRole('button');
+  expect([first.getAttribute('aria-label'), first.getAttribute('aria-pressed')]).toEqual([
+    'Unfavourite',
+    'true',
+  ]);
+  expect([second.getAttribute('aria-label'), second.getAttribute('aria-pressed')]).toEqual([
+    'Favourite',
+    'false',
+  ]);
+});

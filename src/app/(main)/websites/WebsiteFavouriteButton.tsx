@@ -14,14 +14,16 @@ export function WebsiteFavouriteButton({
   const { toast } = useToast();
   const { t, labels, messages, getErrorMessage } = useMessages();
   const { touch } = useModified();
-  // Local optimism, like ReplayPlayback: the star flips before the request resolves. The refetched
-  // list remounts a row that moves, so a stale value cannot outlive the reorder.
-  const [override, setOverride] = useState<boolean | null>(null);
-  const favourite = override ?? isFavourite;
+  // Local optimism, like ReplayPlayback: the star flips before the request resolves. The override
+  // carries the website id because react-zen keys table rows by position, not id: a reordered list
+  // reuses this component instance for whichever row lands in the same slot, and an unscoped value
+  // would show here on an untouched neighbour.
+  const [override, setOverride] = useState<{ websiteId: string; value: boolean } | null>(null);
+  const favourite = override?.websiteId === websiteId ? override.value : isFavourite;
   const label = t(favourite ? labels.unfavourite : labels.favourite);
 
   const handlePress = async () => {
-    setOverride(!favourite);
+    setOverride({ websiteId, value: !favourite });
 
     try {
       await (favourite

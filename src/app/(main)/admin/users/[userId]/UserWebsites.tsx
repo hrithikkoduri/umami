@@ -7,7 +7,10 @@ export function UserWebsites({ userId }) {
 
   return (
     <DataGrid query={queryResult}>
-      {({ data }) => <WebsitesTable data={data} showActions />}
+      {({ data }) => (
+        // The star would read the target user's isFavourite while writing the admin's own.
+        <WebsitesTable data={data} showActions showFavourite={false} />
+      )}
     </DataGrid>
   );
 }

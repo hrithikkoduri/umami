@@ -11,11 +11,13 @@ import { WebsiteSparkline } from './WebsiteSparkline';
 
 export interface WebsitesTableProps extends DataTableProps {
   showActions?: boolean;
+  showFavourite?: boolean;
   renderLink?: (row: any) => ReactNode;
 }
 
 export function WebsitesTable({
   showActions,
+  showFavourite = true,
   renderLink,
   data = [],
   ...props
@@ -83,7 +85,9 @@ export function WebsitesTable({
 
           return (
             <Row gap="2">
-              <WebsiteFavouriteButton websiteId={websiteId} isFavourite={row.isFavourite} />
+              {showFavourite && (
+                <WebsiteFavouriteButton websiteId={websiteId} isFavourite={row.isFavourite} />
+              )}
               {showActions && (
                 <LinkButton href={renderUrl(`/websites/${websiteId}/settings`)} variant="quiet">
                   <Icon>
