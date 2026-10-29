@@ -1,8 +1,8 @@
 import prisma from '@/lib/prisma';
 
 export async function favouriteWebsite(websiteId: string, userId: string) {
-  // skipDuplicates, not upsert: a single INSERT ... ON CONFLICT DO NOTHING stays
-  // atomic when the star is double-clicked, so no duplicate-key error escapes.
+  // A double-clicked star must not raise a duplicate-key error; skipDuplicates makes the
+  // duplicate insert a no-op whatever statement Prisma chooses for it.
   await prisma.client.websiteFavourite.createMany({
     data: [{ userId, websiteId }],
     skipDuplicates: true,
@@ -32,5 +32,5 @@ export async function getFavouriteWebsiteIds(userId: string) {
     select: { websiteId: true },
   });
 
-  return new Set(favourites.map(({ websiteId }) => websiteId));
+  return favourites.map(({ websiteId }) => websiteId);
 }

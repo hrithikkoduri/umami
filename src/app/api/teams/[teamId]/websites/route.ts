@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ team
 
   const filters = await getQueryFilters(query);
 
-  const websites = await getTeamWebsites(teamId, filters);
+  const websites = await getTeamWebsites(teamId, auth.user.id, filters);
 
   return json(websites);
 }

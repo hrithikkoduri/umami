@@ -1,15 +1,17 @@
 import { z } from 'zod';
 import type { Prisma, Website } from '@/generated/prisma/client';
-import { ROLES } from '@/lib/constants';
+import { DEFAULT_PAGE_SIZE, ROLES } from '@/lib/constants';
 import prisma, { getSchema } from '@/lib/prisma';
 import redis from '@/lib/redis';
 import { sanitizeSortFilters } from '@/lib/sort';
 import type { PageResult, QueryFilters } from '@/lib/types';
+import { getFavouriteWebsiteIds } from './websiteFavourite';
 
 const WEBSITE_SORT_FIELDS = ['name', 'domain', 'createdAt'] as const;
 
 export type WebsiteListItem = Website & {
   shareId: string | null;
+  isFavourite: boolean;
   user?: { id: string; username: string } | null;
   createUser?: { id: string; username: string } | null;
   team?: {
@@ -95,13 +97,86 @@ export async function getWebsite(websiteId: string) {
   return attachShareIdToWebsite(website);
 }
 
+// Favourites first, then the rest, with the requested orderBy applied inside each group.
+// Paging is a window over that concatenation, so a page that straddles the boundary is
+// filled from both groups instead of skipping or repeating rows.
+async function pagedWebsiteQuery(
+  criteria: Prisma.WebsiteFindManyArgs,
+  where: Prisma.WebsiteWhereInput,
+  filters: QueryFilters,
+  userId?: string,
+): Promise<PageResult<(Website & { isFavourite: boolean })[]>> {
+  const { page = 1, pageSize, orderBy, sortDescending = false, search } = filters;
+  const size = +pageSize || DEFAULT_PAGE_SIZE;
+  const skip = +size * (+page - 1);
+  const orderByArgs = orderBy
+    ? ([{ [orderBy]: sortDescending ? 'desc' : 'asc' }] as Prisma.WebsiteOrderByWithRelationInput[])
+    : undefined;
+
+  // A non-positive pageSize means "no paging", the same as pagedQuery omitting take/skip.
+  const findPage = async (pageWhere: Prisma.WebsiteWhereInput, take?: number, pageSkip?: number) =>
+    prisma.client.website.findMany({
+      ...criteria,
+      where: pageWhere,
+      ...(orderByArgs && { orderBy: orderByArgs }),
+      ...(size > 0 && { take, skip: pageSkip }),
+    });
+
+  // Without a requesting user, or without favourites, there is nothing to split on and the
+  // query is a plain page.
+  const favouriteIds = userId ? await getFavouriteWebsiteIds(userId) : [];
+  const favouriteIdSet = new Set(favouriteIds);
+  const favouriteWhere: Prisma.WebsiteWhereInput | null = favouriteIds.length
+    ? { AND: [where, { favourites: { some: { userId } } }] }
+    : null;
+  const restWhere: Prisma.WebsiteWhereInput = favouriteIds.length
+    ? { AND: [where, { favourites: { none: { userId } } }] }
+    : where;
+  const favouriteCount = favouriteWhere
+    ? await prisma.client.website.count({ where: favouriteWhere })
+    : 0;
+
+  const data: Website[] = [];
+
+  if (!favouriteWhere) {
+    data.push(...(await findPage(where, size, skip)));
+  } else if (size <= 0) {
+    // Unpaged: everything, favourites first.
+    data.push(...(await findPage(favouriteWhere)));
+    data.push(...(await findPage(restWhere)));
+  } else if (skip < favouriteCount) {
+    // The page starts in the favourites and may run past them into the rest.
+    data.push(...(await findPage(favouriteWhere, size, skip)));
+
+    const remaining = size - (favouriteCount - skip);
+
+    if (remaining > 0) {
+      data.push(...(await findPage(restWhere, remaining, 0)));
+    }
+  } else {
+    data.push(...(await findPage(restWhere, size, skip - favouriteCount)));
+  }
+
+  const count = await prisma.client.website.count({ where });
+
+  return {
+    data: data.map(website => ({ ...website, isFavourite: favouriteIdSet.has(website.id) })),
+    count,
+    page: +page,
+    pageSize: size,
+    orderBy,
+    search,
+  };
+}
+
 export async function getWebsites(
   criteria: Prisma.WebsiteFindManyArgs,
   filters: QueryFilters,
+  userId?: string,
 ): Promise<PageResult<WebsiteListItem[]>> {
   const sortFilters = sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS);
   const { search } = sortFilters;
-  const { getSearchParameters, pagedQuery } = prisma;
+  const { getSearchParameters } = prisma;
 
   const where: Prisma.WebsiteWhereInput = {
     ...criteria.where,
@@ -114,7 +189,7 @@ export async function getWebsites(
     deletedAt: null,
   };
 
-  const websites = await pagedQuery('website', { ...criteria, where }, sortFilters);
+  const websites = await pagedWebsiteQuery(criteria, where, sortFilters, userId);
 
   return attachShareIdToWebsites(websites);
 }
@@ -143,6 +218,7 @@ export async function getAllUserWebsitesIncludingTeamAccess(
       },
     },
     sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS, { orderBy: 'name' }),
+    userId,
   );
 }
 
@@ -162,10 +238,11 @@ export async function getUserWebsites(userId: string, filters?: QueryFilters) {
       },
     },
     sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS, { orderBy: 'name' }),
+    userId,
   );
 }
 
-export async function getTeamWebsites(teamId: string, filters?: QueryFilters) {
+export async function getTeamWebsites(teamId: string, userId: string, filters?: QueryFilters) {
   return getWebsites(
     {
       where: {
@@ -181,6 +258,7 @@ export async function getTeamWebsites(teamId: string, filters?: QueryFilters) {
       },
     },
     filters,
+    userId,
   );
 }
 
@@ -320,7 +398,7 @@ export async function attachShareIdToWebsite(website: Website) {
 }
 
 export async function attachShareIdToWebsites(
-  websites: PageResult<(Website & Partial<WebsiteListItem>)[]>,
+  websites: PageResult<(Website & { isFavourite: boolean })[]>,
 ): Promise<PageResult<WebsiteListItem[]>> {
   const websiteIds = websites.data.map(website => website.id);
 
