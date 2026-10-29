@@ -1804,6 +1804,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/websites/{websiteId}/favourite': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Star a website
+     * @description Stars the website for the signed-in user. Starring an already starred website keeps a single row and returns the same response.
+     */
+    post: operations['createWebsiteFavourite'];
+    /**
+     * Unstar a website
+     * @description Removes the signed-in user’s star from the website. Unstarring a website that is not starred is a no-op.
+     */
+    delete: operations['deleteWebsiteFavourite'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/websites/{websiteId}/funnels': {
     parameters: {
       query?: never;
@@ -3044,6 +3068,11 @@ export interface components {
       page: number;
       /** @description Number of results per page. */
       pageSize: number;
+    };
+    /** @description Whether the website is starred. */
+    WebsiteFavouriteStatus: {
+      /** @constant */
+      isFavourite: true;
     };
     WebsitePage: {
       /** @description Number of matching records. */
@@ -15313,6 +15342,88 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
+        };
+      };
+    };
+  };
+  createWebsiteFavourite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the website. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Website starred. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WebsiteFavouriteStatus'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  deleteWebsiteFavourite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the website. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Website unstarred. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
         };
       };
     };

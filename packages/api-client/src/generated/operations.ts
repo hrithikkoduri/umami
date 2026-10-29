@@ -154,6 +154,14 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  createWebsiteFavourite: {
+    operationId: 'createWebsiteFavourite',
+    method: 'post',
+    path: '/api/websites/{websiteId}/favourite',
+    pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: false,
+  },
   createWebsiteFunnel: {
     operationId: 'createWebsiteFunnel',
     method: 'post',
@@ -263,6 +271,14 @@ export const operations = {
     method: 'delete',
     path: '/api/websites/{websiteId}/annotations/{annotationId}',
     pathParams: ['websiteId', 'annotationId'],
+    queryParams: [],
+    hasBody: false,
+  },
+  deleteWebsiteFavourite: {
+    operationId: 'deleteWebsiteFavourite',
+    method: 'delete',
+    path: '/api/websites/{websiteId}/favourite',
+    pathParams: ['websiteId'],
     queryParams: [],
     hasBody: false,
   },
@@ -3354,6 +3370,18 @@ export abstract class GeneratedUmamiClient {
   }
 
   /**
+   * Star a website
+   * Stars the website for the signed-in user. Starring an already starred website keeps a single row and returns the same response.
+   * `POST /api/websites/{websiteId}/favourite`
+   */
+  createWebsiteFavourite(
+    input: OperationInput<'createWebsiteFavourite'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'createWebsiteFavourite'>> {
+    return this.execute('createWebsiteFavourite', input, options);
+  }
+
+  /**
    * Create website funnel
    * `POST /api/websites/{websiteId}/funnels`
    */
@@ -3517,6 +3545,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'deleteWebsiteAnnotation'>> {
     return this.execute('deleteWebsiteAnnotation', input, options);
+  }
+
+  /**
+   * Unstar a website
+   * Removes the signed-in user’s star from the website. Unstarring a website that is not starred is a no-op.
+   * `DELETE /api/websites/{websiteId}/favourite`
+   */
+  deleteWebsiteFavourite(
+    input: OperationInput<'deleteWebsiteFavourite'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'deleteWebsiteFavourite'>> {
+    return this.execute('deleteWebsiteFavourite', input, options);
   }
 
   /**
