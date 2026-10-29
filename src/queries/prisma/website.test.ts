@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { deleteWebsite, getWebsites, resetWebsite } from './website';
+import {
+  deleteWebsite,
+  getAllUserWebsitesIncludingTeamAccess,
+  getTeamWebsites,
+  getUserWebsites,
+  getWebsites,
+  resetWebsite,
+} from './website';
 import { getFavouriteWebsiteIds } from './websiteFavourite';
 
 const {
@@ -440,5 +447,27 @@ describe('website list favourites-first ordering', () => {
     expect(ids(result as any)).toEqual(['website-a', 'website-b', 'website-c']);
     expect(result.data.every(website => website.isFavourite === false)).toBe(true);
     expect(result.count).toBe(8);
+  });
+
+  // The team wrapper's userId is the argument r3 changed; dropping it would leave every team
+  // list without favourites-first and every row reporting isFavourite: false.
+  test('each list wrapper forwards its requesting user to the favourites lookup', async () => {
+    createWebsiteTable(rows, favourites);
+    vi.mocked(getFavouriteWebsiteIds).mockResolvedValue(favourites);
+
+    // Cleared before each call so a wrapper that stops forwarding userId cannot be covered
+    // by the previous wrapper's call.
+    vi.mocked(getFavouriteWebsiteIds).mockClear();
+    await getUserWebsites('user-1', {});
+    expect(vi.mocked(getFavouriteWebsiteIds)).toHaveBeenCalledWith('user-1');
+
+    vi.mocked(getFavouriteWebsiteIds).mockClear();
+    await getAllUserWebsitesIncludingTeamAccess('user-1', {});
+    expect(vi.mocked(getFavouriteWebsiteIds)).toHaveBeenCalledWith('user-1');
+
+    vi.mocked(getFavouriteWebsiteIds).mockClear();
+    const teamPage = await getTeamWebsites('team-1', 'user-1', {});
+    expect(vi.mocked(getFavouriteWebsiteIds)).toHaveBeenCalledWith('user-1');
+    expect(teamPage.data.some(website => website.isFavourite)).toBe(true);
   });
 });
