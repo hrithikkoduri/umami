@@ -22,6 +22,12 @@ async function deleteWebsiteDependentData(tx: any, websiteId: string) {
     where: { websiteId },
   });
 
+  // Favourites are personal bookmarks, but a reset drops them alongside saved
+  // replays so the website's per-user state never outlives its data.
+  await tx.websiteFavourite.deleteMany({
+    where: { websiteId },
+  });
+
   await tx.sessionReplay.deleteMany({
     where: { websiteId },
   });

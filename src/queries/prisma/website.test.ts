@@ -35,6 +35,11 @@ function createDeleteTx(calls: string[]) {
         calls.push('sessionReplay');
       }),
     },
+    websiteFavourite: {
+      deleteMany: vi.fn(async () => {
+        calls.push('websiteFavourite');
+      }),
+    },
     heatmapEvent: {
       deleteMany: vi.fn(async () => {
         calls.push('heatmapEvent');
@@ -140,8 +145,12 @@ describe('website delete dependencies', () => {
       expect.stringContaining('website_event.website_id = $1'),
       'website-1',
     );
+    expect(tx.websiteFavourite.deleteMany).toHaveBeenCalledWith({
+      where: { websiteId: 'website-1' },
+    });
     expect(calls).toEqual([
       'sessionReplaySaved',
+      'websiteFavourite',
       'sessionReplay',
       'heatmapEvent',
       'revenue',
@@ -180,8 +189,12 @@ describe('website delete dependencies', () => {
       expect.stringContaining('website_event.website_id = $1'),
       'website-1',
     );
+    expect(tx.websiteFavourite.deleteMany).toHaveBeenCalledWith({
+      where: { websiteId: 'website-1' },
+    });
     expect(calls).toEqual([
       'sessionReplaySaved',
+      'websiteFavourite',
       'sessionReplay',
       'heatmapEvent',
       'revenue',
