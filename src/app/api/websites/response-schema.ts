@@ -41,9 +41,15 @@ export const websiteSchema = z
   })
   .meta({ id: 'Website' });
 
+export const websiteListItemSchema = websiteSchema
+  .extend({
+    isFavourite: z.boolean(),
+  })
+  .meta({ id: 'WebsiteListItem' });
+
 export const websitePageSchema = z
   .object({
-    data: z.array(websiteSchema),
+    data: z.array(websiteListItemSchema),
     count: z.number().int().nonnegative(),
     page: z.number().int().positive(),
     pageSize: z.number().int().nonnegative(),

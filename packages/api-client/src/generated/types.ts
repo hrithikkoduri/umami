@@ -3045,11 +3045,45 @@ export interface components {
       /** @description Number of results per page. */
       pageSize: number;
     };
+    WebsiteListItem: {
+      /** @description Date and time the record was created. */
+      createdAt: string | null;
+      /** @description ID of the user who created the resource. */
+      createdBy: string | null;
+      /** @description Date and time the record was deleted, if applicable. */
+      deletedAt: string | null;
+      /** @description Domain name associated with the resource. */
+      domain: string | null;
+      /**
+       * Format: uuid
+       * @description Unique identifier of the resource.
+       */
+      id: string;
+      isFavourite: boolean;
+      /** @description Display name of the resource. */
+      name: string;
+      /** @description Whether recording is enabled for the website. */
+      recorderEnabled: boolean;
+      /** @description Session replay and heatmap recording configuration. */
+      replayConfig: components['schemas']['ReplayConfig'] | null;
+      /** @description Date and time the website analytics were last reset. */
+      resetAt: string | null;
+      /** @description Identifier used to access a shared resource. */
+      shareId: string | null;
+      /** @description ID of the associated team. */
+      teamId: string | null;
+      /** @description Date and time the record was last updated. */
+      updatedAt: string | null;
+      /** @description User associated with the resource. */
+      user?: components['schemas']['WebsiteUser'];
+      /** @description ID of the associated user. */
+      userId: string | null;
+    };
     WebsitePage: {
       /** @description Number of matching records. */
       count: number;
       /** @description Data returned by the operation. */
-      data: components['schemas']['Website'][];
+      data: components['schemas']['WebsiteListItem'][];
       /** @description Field to sort the results by. */
       orderBy?: string;
       /** @description Page number, starting at 1. */
