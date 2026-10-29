@@ -426,6 +426,8 @@
     "two-factor-global-active-tooltip": "Global 2FA is enabled",
     "two-factor-verify": "Verify",
     "two-factor-login": "Two-factor authentication",
+    "favourite": "Add to favourites",
+    "unfavourite": "Remove from favourites",
     "api-keys": "API keys",
     "api-key": "API key",
     "create-api-key": "Create API key",

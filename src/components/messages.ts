@@ -432,6 +432,8 @@ export const labels: Record<string, string> = {
   twoFactorGlobalActiveTooltip: 'label.two-factor-global-active-tooltip',
   twoFactorVerify: 'label.two-factor-verify',
   twoFactorLogin: 'label.two-factor-login',
+  favourite: 'label.favourite',
+  unfavourite: 'label.unfavourite',
   apiKeys: 'label.api-keys',
   apiKey: 'label.api-key',
   createApiKey: 'label.create-api-key',
