@@ -82,6 +82,7 @@ export * from './queries/useWebsiteCohortsQuery';
 export * from './queries/useWebsiteEventsQuery';
 export * from './queries/useWebsiteEventsSeriesQuery';
 export * from './queries/useWebsiteExpandedMetricsQuery';
+export * from './queries/useWebsiteFavouriteMutation';
 export * from './queries/useWebsiteListChartsQuery';
 export * from './queries/useWebsiteMetricsQuery';
 export * from './queries/useWebsitePageviewsQuery';

@@ -362,6 +362,8 @@ export const labels: Record<string, string> = {
   saveSegment: 'label.save-segment',
   saveCohort: 'label.save-cohort',
   saveReplay: 'label.save-replay',
+  favourite: 'label.favourite',
+  unfavourite: 'label.unfavourite',
   analysis: 'label.analysis',
   destinationUrl: 'label.destination-url',
   slug: 'label.slug',

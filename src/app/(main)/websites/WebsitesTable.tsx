@@ -1,9 +1,15 @@
 import { DataColumn, DataTable, type DataTableProps, Icon, Text } from '@umami/react-zen';
 import { type ReactNode, useMemo } from 'react';
 import { DateDistance } from '@/components/common/DateDistance';
+import { FavouriteButton } from '@/components/common/FavouriteButton';
 import { LinkButton } from '@/components/common/LinkButton';
 import { SortableLabel } from '@/components/common/SortableLabel';
-import { useMessages, useNavigation, useWebsiteListChartsQuery } from '@/components/hooks';
+import {
+  useMessages,
+  useNavigation,
+  useWebsiteFavouriteMutation,
+  useWebsiteListChartsQuery,
+} from '@/components/hooks';
 import { SquarePen } from '@/components/icons';
 import { decodePunycodeDomain } from '@/lib/format';
 import { WebsiteSparkline } from './WebsiteSparkline';
@@ -76,6 +82,9 @@ export function WebsitesTable({
       >
         {(row: any) => <DateDistance date={new Date(row.createdAt)} />}
       </DataColumn>
+      <DataColumn id="favourite" label=" " align="end" width="48px">
+        {(row: any) => <FavouriteCell websiteId={row.id} isFavourite={!!row.favourite} />}
+      </DataColumn>
       {showActions && (
         <DataColumn id="action" label=" " align="end" width="48px">
           {(row: any) => {
@@ -92,5 +101,20 @@ export function WebsitesTable({
         </DataColumn>
       )}
     </DataTable>
+  );
+}
+
+// Each row owns its mutation so one row's pending state never disables the others.
+function FavouriteCell({ websiteId, isFavourite }: { websiteId: string; isFavourite: boolean }) {
+  const { t, labels } = useMessages();
+  const mutation = useWebsiteFavouriteMutation(websiteId);
+
+  return (
+    <FavouriteButton
+      isFavourite={isFavourite}
+      isPending={mutation.isPending}
+      label={t(isFavourite ? labels.unfavourite : labels.favourite)}
+      onToggle={() => mutation.mutate(!isFavourite)}
+    />
   );
 }
