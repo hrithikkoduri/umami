@@ -122,6 +122,17 @@ describe('POST /api/websites/{websiteId}/favourite', () => {
     expect(response.status).toBe(401);
   });
 
+  test('returns 400 for a non-UUID website id and never reaches the write', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/websites/not-a-uuid/favourite', { method: 'POST' }),
+      { params: Promise.resolve({ websiteId: 'not-a-uuid' }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(createWebsiteFavouriteMock).not.toHaveBeenCalled();
+    expect(canViewAuthenticatedWebsiteMock).not.toHaveBeenCalled();
+  });
+
   test('returns the parse error before authorising', async () => {
     parseRequestMock.mockResolvedValue({
       auth: signedIn,
@@ -162,6 +173,16 @@ describe('DELETE /api/websites/{websiteId}/favourite', () => {
     expect(favouriteRows).toEqual([]);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true });
+  });
+
+  test('returns 400 for a non-UUID website id', async () => {
+    const response = await DELETE(
+      new Request('http://localhost/api/websites/not-a-uuid/favourite', { method: 'DELETE' }),
+      { params: Promise.resolve({ websiteId: 'not-a-uuid' }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(deleteWebsiteFavouriteMock).not.toHaveBeenCalled();
   });
 
   test('returns 401 without a session and never writes', async () => {

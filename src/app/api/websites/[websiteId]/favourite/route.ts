@@ -1,16 +1,13 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import { parseRequest } from '@/lib/request';
-import { json, ok, unauthorized } from '@/lib/response';
+import { badRequest, json, ok, unauthorized } from '@/lib/response';
 import { canViewAuthenticatedWebsite } from '@/permissions';
 import { createWebsiteFavourite, deleteWebsiteFavourite } from '@/queries/prisma';
+import { websiteIdParamsSchema } from './request-schema';
 
 // Favourites belong to a signed-in user, so the share token must never reach a write.
-async function getAuthorizedContext(
-  request: Request,
-  params: Promise<{ websiteId: string }>,
-  schema?: z.ZodType,
-) {
-  const { auth, body, error } = await parseRequest(request, schema);
+async function getAuthorizedContext(request: Request, params: Promise<{ websiteId: string }>) {
+  const { auth, error } = await parseRequest(request);
 
   if (error) {
     return { error: error() };
@@ -18,11 +15,19 @@ async function getAuthorizedContext(
 
   const { websiteId } = await params;
 
-  if (!auth?.user || !(await canViewAuthenticatedWebsite(auth, websiteId))) {
+  // The path param is not covered by parseRequest, and an invalid UUID reaches the
+  // database as a 500, so validate it before any permission check or write.
+  const parsed = websiteIdParamsSchema.safeParse({ websiteId });
+
+  if (!parsed.success) {
+    return { error: badRequest(z.treeifyError(parsed.error)) };
+  }
+
+  if (!auth?.user || !(await canViewAuthenticatedWebsite(auth, parsed.data.websiteId))) {
     return { error: unauthorized() };
   }
 
-  return { userId: auth.user.id, websiteId, body };
+  return { userId: auth.user.id, websiteId: parsed.data.websiteId };
 }
 
 export async function POST(

@@ -15367,6 +15367,24 @@ export interface operations {
           'application/json': components['schemas']['WebsiteFavouriteStatus'];
         };
       };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
       /** @description Unauthorized. */
       401: {
         headers: {
@@ -15406,6 +15424,24 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
         };
       };
       /** @description Unauthorized. */

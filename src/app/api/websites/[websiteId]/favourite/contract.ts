@@ -1,8 +1,14 @@
 import { z } from 'zod';
 import { defineOperation } from '@/openapi/operation';
-import { jsonResponse, okSchema, unauthorizedResponse } from '@/openapi/schemas';
+import {
+  badRequestResponse,
+  jsonResponse,
+  okSchema,
+  unauthorizedResponse,
+} from '@/openapi/schemas';
+import { websiteIdParamsSchema } from './request-schema';
 
-const websiteIdPathSchema = z.object({ websiteId: z.uuid() });
+const websiteIdPathSchema = websiteIdParamsSchema;
 
 const isFavouriteSchema = z
   .object({ isFavourite: z.literal(true) })
@@ -23,6 +29,7 @@ export const operations = [
       requestParams: { path: websiteIdPathSchema },
       responses: {
         '200': jsonResponse(isFavouriteSchema, 'Website starred.'),
+        '400': badRequestResponse,
         '401': unauthorizedResponse,
       },
     },
@@ -41,6 +48,7 @@ export const operations = [
       requestParams: { path: websiteIdPathSchema },
       responses: {
         '200': jsonResponse(okSchema, 'Website unstarred.'),
+        '400': badRequestResponse,
         '401': unauthorizedResponse,
       },
     },
