@@ -1,4 +1,4 @@
-import { DataColumn, DataTable, type DataTableProps, Icon, Text } from '@umami/react-zen';
+import { DataColumn, DataTable, type DataTableProps, Icon, Row, Text } from '@umami/react-zen';
 import { type ReactNode, useMemo } from 'react';
 import { DateDistance } from '@/components/common/DateDistance';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -6,6 +6,7 @@ import { SortableLabel } from '@/components/common/SortableLabel';
 import { useMessages, useNavigation, useWebsiteListChartsQuery } from '@/components/hooks';
 import { SquarePen } from '@/components/icons';
 import { decodePunycodeDomain } from '@/lib/format';
+import { WebsiteFavouriteButton } from './WebsiteFavouriteButton';
 import { WebsiteSparkline } from './WebsiteSparkline';
 
 export interface WebsitesTableProps extends DataTableProps {
@@ -76,21 +77,24 @@ export function WebsitesTable({
       >
         {(row: any) => <DateDistance date={new Date(row.createdAt)} />}
       </DataColumn>
-      {showActions && (
-        <DataColumn id="action" label=" " align="end" width="48px">
-          {(row: any) => {
-            const websiteId = row.id;
+      <DataColumn id="action" label=" " align="end" width="72px">
+        {(row: any) => {
+          const websiteId = row.id;
 
-            return (
-              <LinkButton href={renderUrl(`/websites/${websiteId}/settings`)} variant="quiet">
-                <Icon>
-                  <SquarePen />
-                </Icon>
-              </LinkButton>
-            );
-          }}
-        </DataColumn>
-      )}
+          return (
+            <Row gap="2">
+              <WebsiteFavouriteButton websiteId={websiteId} isFavourite={row.isFavourite} />
+              {showActions && (
+                <LinkButton href={renderUrl(`/websites/${websiteId}/settings`)} variant="quiet">
+                  <Icon>
+                    <SquarePen />
+                  </Icon>
+                </LinkButton>
+              )}
+            </Row>
+          );
+        }}
+      </DataColumn>
     </DataTable>
   );
 }
