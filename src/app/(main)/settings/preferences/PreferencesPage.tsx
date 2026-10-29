@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useMessages } from '@/components/hooks';
 import { PreferenceSettings } from './PreferenceSettings';
+import { SystemSettings } from './SystemSettings';
 
 export function PreferencesPage() {
   const { t, labels } = useMessages();
@@ -15,6 +16,9 @@ export function PreferencesPage() {
         <PageHeader title={t(labels.preferences)} />
         <Panel>
           <PreferenceSettings />
+        </Panel>
+        <Panel title={t(labels.system)}>
+          <SystemSettings />
         </Panel>
       </Column>
     </PageBody>

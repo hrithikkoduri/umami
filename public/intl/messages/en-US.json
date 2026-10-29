@@ -197,6 +197,8 @@
     "match-all": "All",
     "match-any": "Any",
     "maximize": "Maximize",
+    "system": "System",
+    "health-check": "Health check",
     "medium": "Medium",
     "member": "Member",
     "members": "Members",

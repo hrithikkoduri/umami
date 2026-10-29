@@ -343,6 +343,8 @@ export const labels: Record<string, string> = {
   note: 'label.note',
   addPixel: 'label.add-pixel',
   maximize: 'label.maximize',
+  system: 'label.system',
+  healthCheck: 'label.health-check',
   remaining: 'label.remaining',
   conversion: 'label.conversion',
   firstClick: 'label.first-click',
